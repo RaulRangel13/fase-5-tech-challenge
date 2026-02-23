@@ -1,0 +1,6 @@
+@AGRO.Ingestion.Service_HostAddress = http://localhost:5076
+
+GET {{AGRO.Ingestion.Service_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

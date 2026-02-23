@@ -1,0 +1,6 @@
+@AGRO.Identity.Service_HostAddress = http://localhost:5058
+
+GET {{AGRO.Identity.Service_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

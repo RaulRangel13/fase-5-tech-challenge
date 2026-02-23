@@ -1,0 +1,39 @@
+# .NET Core
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Environment
+.env
+.env.*
+
+# Logs
+log/
+logs/
+*.log
+
+# Docker/Kube
+.dockerignore
+!docker-compose.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Rider
+.idea/
+
+# Others
+/grafana_data
+/postgres_data

@@ -1,0 +1,74 @@
+name: AgroSolutions CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore AgroSolutions.sln
+
+    - name: Build
+      run: dotnet build AgroSolutions.sln --no-restore --configuration Release
+
+    - name: Test
+      run: dotnet test AgroSolutions.sln --no-build --verbosity normal --configuration Release
+
+  docker_build:
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    # Identity Service
+    - name: Build Identity Service Image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: src/AGRO.Identity.Service/Dockerfile
+        push: false
+        tags: agro-identity:latest
+
+    # Management Service
+    - name: Build Management Service Image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: src/AGRO.Management.Service/Dockerfile
+        push: false
+        tags: agro-management:latest
+
+    # Ingestion Service
+    - name: Build Ingestion Service Image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: src/AGRO.Ingestion.Service/Dockerfile
+        push: false
+        tags: agro-ingestion:latest
+
+    # Alert Service
+    - name: Build Alert Service Image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: src/AGRO.Alert.Service/Dockerfile
+        push: false
+        tags: agro-alert:latest
