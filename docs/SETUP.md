@@ -46,8 +46,17 @@ cd k8s/infra
 kubectl apply -f postgres.yaml
 kubectl apply -f rabbitmq.yaml
 kubectl apply -f prometheus.yaml
+```
+**Grafana (ConfigMaps + Deploy):**
+
+Antes do `grafana.yaml`, gere os ConfigMaps de provisioning/dashboards:
+
+```bash
+./generate-grafana-cm.sh
+kubectl apply -f grafana-configmaps.yaml
 kubectl apply -f grafana.yaml
 ```
+
 Os DataSources e Dashboards do Grafana já vão ser provisionados via ConfigMap.
 
 ### Passo 4: Aplicar os Microsserviços
@@ -70,6 +79,7 @@ Dependendo do Minikube, você precisará executar:
 minikube service agro-identity --url
 minikube service agro-management --url
 minikube service agro-ingestion --url
+minikube service agro-alert --url
 minikube service grafana --url
 ```
 Geralmente, o Grafana ficará disponível na porta mapeada e você poderá visualizá-lo com login `admin` / `admin`.
@@ -86,15 +96,31 @@ Isso vai criar toda a infraestrutura com as rotas fixas:
 - Identity API: `http://localhost:5001/swagger`
 - Management API: `http://localhost:5002/swagger`
 - Ingestion API: `http://localhost:5003/swagger`
+- Alert API: `http://localhost:5004/swagger`
 - RabbitMQ UI: `http://localhost:15672` (guest / guest)
 - Grafana: `http://localhost:3000` (admin / admin)
 - Prometheus: `http://localhost:9090`
+
+**Primeira vez ou após `docker-compose down -v`:** o script em `init-db/01-create-databases.sql` cria os bancos `agro_identity_db`, `agro_management_db` e `agro_alert_db` na inicialização do PostgreSQL.
+
+### Dashboard de Monitoramento (dados do produtor)
+Além do dashboard técnico (métricas Prometheus), existe um dashboard de **telemetria/alertas** via PostgreSQL:
+- Grafana: `http://localhost:3000` → pasta **Tech Challenge** → **AgroSolutions - Monitoramento por Talhão**
 
 ---
 
 ## Rodando os Testes Unitários
 
-Para garantir que o CI/CD (GitHub Actions) vai passar caso comite as alterações, rode os testes de unidade na pasta raiz do projeto:
+Para atender ao requisito de **testes unitários obrigatórios quando o deploy é local**, o projeto inclui testes em `tests/AGRO.Tests/`:
+
+* **FarmServiceTests:** cadastro de fazenda e talhão, listagem, talhão em fazenda inexistente.
+* **AuthServiceTests:** registro, login, email duplicado, credenciais inválidas.
+* **AlertServiceTests:** listagem de alertas (com e sem filtro), status do talhão (Normal quando sem dados), histórico de telemetria.
+
+Na raiz do repositório:
+
 ```bash
 dotnet test
 ```
+
+O pipeline de CI (`.github/workflows/ci.yml`) executa esses testes antes do build das imagens Docker; todos devem passar para o pipeline concluir com sucesso.

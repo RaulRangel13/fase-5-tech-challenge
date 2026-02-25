@@ -16,10 +16,10 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "AgroSolutions Management API", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme.",
+        Description = "Cole apenas o token JWT (sem a palavra 'Bearer'). Obtenha o token em POST /api/auth/login no Identity (porta 5001).",
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
+        Type = SecuritySchemeType.Http,
         Scheme = "Bearer"
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -64,7 +64,11 @@ builder.Services.AddAuthentication(x =>
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ValidateIssuer = false,
-        ValidateAudience = false
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.FromMinutes(1),
+        NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier,
+        RoleClaimType = System.Security.Claims.ClaimTypes.Role
     };
 });
 

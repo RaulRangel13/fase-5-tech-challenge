@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # 1. Banco de Dados (PostgreSQL)
   postgres:
@@ -13,6 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
     networks:
       - agro-network
     healthcheck:
@@ -71,17 +70,15 @@ services:
       - ./grafana/dashboards:/etc/grafana/dashboards
 
   identity-service:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: src/AGRO.Identity.Service/Dockerfile
     container_name: agro_identity
     environment:
-      - CAST_YOUR_VOTE=true
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=agro_identity_db;Username=admin;Password=adminpassword
-      - Jwt__Key=segredo_super_secreto_para_o_hackathon
-      - Jwt__Issuer=AgroSolutions
-      - Jwt__Audience=AgroSolutions
+      - JwtSettings__SecretKey=super_secret_key_for_hackathon_agro_solutions_2026
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,6 +88,7 @@ services:
       - agro-network
 
   management-service:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: src/AGRO.Management.Service/Dockerfile
@@ -98,6 +96,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=agro_management_db;Username=admin;Password=adminpassword
+      - JwtSettings__SecretKey=super_secret_key_for_hackathon_agro_solutions_2026
     depends_on:
       postgres:
         condition: service_healthy
@@ -109,15 +108,16 @@ services:
       - agro-network
 
   ingestion-service:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: src/AGRO.Ingestion.Service/Dockerfile
     container_name: agro_ingestion
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - RabbitMq__HostName=rabbitmq
-      - RabbitMq__UserName=guest
-      - RabbitMq__Password=guest
+      - RabbitMQ__HostName=rabbitmq
+      - RabbitMQ__UserName=guest
+      - RabbitMQ__Password=guest
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -127,15 +127,20 @@ services:
       - agro-network
 
   alert-service:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: src/AGRO.Alert.Service/Dockerfile
     container_name: agro_alert
+    ports:
+      - "5004:8080"
     environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=agro_alert_db;Username=admin;Password=adminpassword
-      - RabbitMq__HostName=rabbitmq
-      - RabbitMq__UserName=guest
-      - RabbitMq__Password=guest
+      - RabbitMQ__HostName=rabbitmq
+      - RabbitMQ__UserName=guest
+      - RabbitMQ__Password=guest
     depends_on:
       rabbitmq:
         condition: service_healthy

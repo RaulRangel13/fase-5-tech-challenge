@@ -10,6 +10,7 @@ public class AlertDbContext : DbContext
     }
 
     public DbSet<AgroAlert> Alerts { get; set; }
+    public DbSet<SensorReading> SensorReadings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

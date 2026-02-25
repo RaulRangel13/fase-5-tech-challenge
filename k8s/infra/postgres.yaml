@@ -25,6 +25,13 @@ spec:
               value: "agro_db"
           ports:
             - containerPort: 5432
+          volumeMounts:
+            - name: postgres-initdb
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: postgres-initdb
+          configMap:
+            name: postgres-initdb-cm
 ---
 apiVersion: v1
 kind: Service
@@ -38,3 +45,15 @@ spec:
     - protocol: TCP
       port: 5432
       targetPort: 5432
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-initdb-cm
+  namespace: default
+data:
+  01-create-databases.sql: |
+    -- Bancos criados apenas na primeira inicialização (quando o volume está vazio)
+    CREATE DATABASE agro_identity_db;
+    CREATE DATABASE agro_management_db;
+    CREATE DATABASE agro_alert_db;

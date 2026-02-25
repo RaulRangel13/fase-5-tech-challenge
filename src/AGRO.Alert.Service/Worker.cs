@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using AGRO.Alert.Service.Domain.Entities;
 using AGRO.Alert.Service.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -82,24 +83,84 @@ public class Worker : BackgroundService
     {
         if (data == null) return;
 
-        // Regra Simples: Umidade < 30%
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AlertDbContext>();
+
+        // 1. Persistir dado do sensor para histórico e gráficos
+        var reading = new SensorReading
+        {
+            FieldId = data.FieldId,
+            Timestamp = data.Timestamp,
+            SoilMoisture = data.SoilMoisture,
+            Temperature = data.Temperature,
+            Rainfall = data.Rainfall
+        };
+        db.SensorReadings.Add(reading);
+        await db.SaveChangesAsync();
+
+        // 2. Regra de Alerta de Seca: umidade < 30% por mais de 24 horas
         if (data.SoilMoisture < 30)
         {
-            _logger.LogWarning("ALERTA DE SECA DETECTADO! Umidade: {Moisture}%", data.SoilMoisture);
+            var twentyFourHoursAgo = data.Timestamp.AddHours(-24);
+            var readingsLast24h = await db.SensorReadings
+                .Where(r => r.FieldId == data.FieldId && r.Timestamp >= twentyFourHoursAgo)
+                .OrderBy(r => r.Timestamp)
+                .ToListAsync();
 
-            using (var scope = _serviceProvider.CreateScope())
+            var allBelow30 = readingsLast24h.All(r => r.SoilMoisture < 30);
+            var spans24h = readingsLast24h.Count >= 2 &&
+                (readingsLast24h[^1].Timestamp - readingsLast24h[0].Timestamp).TotalHours >= 24;
+
+            // Não criar alerta duplicado: verificar se já existe alerta de seca nos últimos 24h
+            var lastDroughtAlert = await db.Alerts
+                .Where(a => a.FieldId == data.FieldId && a.Message.Contains("seca"))
+                .OrderByDescending(a => a.Timestamp)
+                .FirstOrDefaultAsync();
+            var alreadyAlerted = lastDroughtAlert != null &&
+                (data.Timestamp - lastDroughtAlert.Timestamp).TotalHours < 24;
+
+            if (allBelow30 && spans24h && !alreadyAlerted)
             {
-                var db = scope.ServiceProvider.GetRequiredService<AlertDbContext>();
-                var alert = new AgroAlert
+                _logger.LogWarning("ALERTA DE SECA! Umidade < 30% por 24h no talhão {FieldId}", data.FieldId);
+                db.Alerts.Add(new AgroAlert
                 {
                     FieldId = data.FieldId,
-                    Message = "Risco de seca detectado. Umidade do solo abaixo de 30%.",
+                    Message = "Alerta de Seca: Umidade do solo abaixo de 30% por mais de 24 horas.",
                     Severity = "Warning",
                     TriggerValue = data.SoilMoisture,
                     Timestamp = DateTime.UtcNow
-                };
-                db.Alerts.Add(alert);
+                });
                 await db.SaveChangesAsync();
+            }
+        }
+
+        // 3. Regra de Risco de Praga: temperatura > 38°C por período prolongado
+        if (data.Temperature > 38)
+        {
+            var sixHoursAgo = data.Timestamp.AddHours(-6);
+            var recentHighTemp = await db.SensorReadings
+                .Where(r => r.FieldId == data.FieldId && r.Timestamp >= sixHoursAgo && r.Temperature > 38)
+                .CountAsync();
+
+            if (recentHighTemp >= 3) // 3+ leituras com temp alta em 6h
+            {
+                var lastPestAlert = await db.Alerts
+                    .Where(a => a.FieldId == data.FieldId && a.Message.Contains("Praga"))
+                    .OrderByDescending(a => a.Timestamp)
+                    .FirstOrDefaultAsync();
+                if (lastPestAlert == null || (data.Timestamp - lastPestAlert.Timestamp).TotalHours >= 6)
+                {
+                    _logger.LogWarning("RISCO DE PRAGA! Temperatura elevada no talhão {FieldId}", data.FieldId);
+                    db.Alerts.Add(new AgroAlert
+                    {
+                        FieldId = data.FieldId,
+                        Message = "Risco de Praga: Temperatura elevada por período prolongado.",
+                        Severity = "Warning",
+                        TriggerValue = data.Temperature,
+                        Timestamp = DateTime.UtcNow
+                    });
+                    await db.SaveChangesAsync();
+                }
             }
         }
     }
@@ -143,6 +204,7 @@ public class SimplePolicy {
 public class TelemetryDto
 {
     public Guid FieldId { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public double SoilMoisture { get; set; }
     public double Temperature { get; set; }
     public double Rainfall { get; set; }

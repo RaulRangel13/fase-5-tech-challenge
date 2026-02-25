@@ -19,14 +19,16 @@ public class TokenService
     {
         var secretKey = _configuration["JwtSettings:SecretKey"] ?? "super_secret_key_for_hackathon_agro_solutions_2026";
         var key = Encoding.ASCII.GetBytes(secretKey);
-        
+
         var tokenHandler = new JwtSecurityTokenHandler();
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim(ClaimTypes.Role, user.Role)
             }),
             Expires = DateTime.UtcNow.AddHours(8),

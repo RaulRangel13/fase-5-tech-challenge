@@ -28,7 +28,7 @@ Para realizar os testes sistêmicos, certifique-se que subiu e aplicou os manife
 
 ## 3. Gestão (Management Service)
 
-Adicione o Header: `Authorization: Bearer SEU_TOKEN`
+No Swagger do Management (`http://localhost:5002/swagger`), clique em **Authorize** e cole **apenas o token** (sem escrever "Bearer" na frente). O Swagger envia no header: `Authorization: Bearer SEU_TOKEN`.
 
 ### 3.1. Criar Propriedade
 **POST** `http://localhost:30002/api/farms` (K8s) ou `http://localhost:5002/api/farms` (Compose)
@@ -80,9 +80,32 @@ Envie múltiplas requisições com umidade abaixo de 30% para simular a condiç�
 }
 ```
 
+### 4.3. Visualizar histórico, alertas e status no Grafana (Dashboard do Produtor)
+1. Abra o Grafana: `http://localhost:3000` (login `admin` / `admin`)
+2. Vá na pasta **Tech Challenge**
+3. Abra o dashboard **AgroSolutions - Monitoramento por Talhão**
+4. Selecione o `fieldId` do talhão e visualize:
+   - Umidade / Temperatura / Precipitação (séries temporais)
+   - Alertas (tabela)
+   - Status do talhão
+
 ---
 
-## 5. Validação da Mensageria e Alertas
+## 5. Alert Service – Alertas, Histórico e Status
+
+### 5.1. Listar alertas por talhão
+**GET** `http://localhost:30004/api/alerts?fieldId=ID_DO_TALHAO` (K8s NodePort) ou `http://localhost:5004/api/alerts?fieldId=ID_DO_TALHAO` (Compose)  
+Alternativa: **GET** `/api/alerts/field/{fieldId}`
+
+### 5.2. Histórico de telemetria (gráficos)
+**GET** `http://localhost:30004/api/telemetry?fieldId=ID_DO_TALHAO&from=2025-01-01&to=2025-12-31&limit=500` (K8s) ou `http://localhost:5004/api/telemetry?fieldId=ID_DO_TALHAO&from=2025-01-01&to=2025-12-31&limit=500` (Compose)
+
+### 5.3. Status do talhão (Normal / Alerta de Seca / Risco de Praga)
+**GET** `http://localhost:30004/api/status/field/{fieldId}` (K8s) ou `http://localhost:5004/api/status/field/{fieldId}` (Compose)
+
+---
+
+## 6. Validação da Mensageria e Alertas
 1. Acesse a interface do RabbitMQ em http://localhost:15672 (guest/guest). Verifique a fila `telemetry_queue`.
-2. Acesse o **Alert Service Logs**. Você verá a inscrição "ALERTA DE SECA DETECTADO!".
+2. Acesse o **Alert Service Logs**. Com umidade < 30% por mais de 24h, verá "ALERTA DE SECA!"; dados dos sensores são persistidos para histórico.
 3. Acesse o **Grafana** em http://localhost:32000 (K8s) ou http://localhost:3000 (Compose). Faça login com `admin` / `admin` e visualize o painel de "Métricas AgroSolutions". Note o aumento do RPS na ingestão.

@@ -20,11 +20,11 @@ spec:
           env:
             - name: ASPNETCORE_ENVIRONMENT
               value: "Development"
-            - name: RabbitMq__HostName
+            - name: RabbitMQ__HostName
               value: "rabbitmq"
-            - name: RabbitMq__UserName
+            - name: RabbitMQ__UserName
               value: "guest"
-            - name: RabbitMq__Password
+            - name: RabbitMQ__Password
               value: "guest"
           ports:
             - containerPort: 8080

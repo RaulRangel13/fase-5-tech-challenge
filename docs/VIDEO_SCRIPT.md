@@ -6,7 +6,7 @@ Este roteiro é um **passo a passo exato** do que você deve mostrar na tela e f
 
 ## 1. Introdução e Desenho da Solução (Entregável 1) - `~3 min`
 
-**📍 Onde você deve estar:** Abra o arquivo `docs/ARCHITECTURE.md` no seu editor de código (VS Code) ou mostre a renderização do diagrama C4 no GitHub.
+**📍 Onde você deve estar:** Abra o arquivo `docs/ARCHITECTURE.md` (diagrama e justificativa) e, se quiser, `docs/ENTREGAVEIS.md` (checklist dos entregáveis e fechamento dos gaps).
 **🗣️ O que falar:**
 > *"Olá, somos o time [Seu Time]. Desenhamos uma arquitetura baseada em **Microsserviços** (.NET 8) para a plataforma AgroSolutions, separando os domínios de Identity, Management, Ingestion e Alert.*
 > *Para garantir alta escalabilidade na ingestão de dados dos sensores IoT, utilizamos **RabbitMQ** como mensageria assíncrona. Assim, os dados chegam pela Ingestão e vão para a fila. O serviço de Alerta consome essa fila, avalia as regras e salva no PostgreSQL, protegendo o banco contra gargalos.*
@@ -26,7 +26,9 @@ Este roteiro é um **passo a passo exato** do que você deve mostrar na tela e f
 
 **📍 Onde você deve estar:** Abra o repositório do projeto no GitHub e clique na aba **"Actions"**.
 **🗣️ O que falar:**
-> *"Para esteira de entrega, configuramos o **GitHub Actions**. Quando fazemos um push para a branch `main`, o pipeline realiza o Build da solução e executa nossos **Testes Unitários em xUnit**, garantindo a qualidade do `FarmService` e outras regras de negócio antes de avançar. Com o teste verde, a pipeline constrói as imagens Docker (CI)."*
+> *"Para esteira de entrega, configuramos o **GitHub Actions**. Quando fazemos um push para a branch `main`, o pipeline executa o **build da solução** e os **testes unitários** (Identity, Management e Alert Service — registro/login, fazenda/talhão, alertas e status). Com os testes verdes, o pipeline constrói as imagens Docker de todos os microsserviços. Como nosso deploy é local, os testes unitários são obrigatórios e estão implementados no projeto `AGRO.Tests`."*
+
+*Opcional:* Na máquina local, rode `dotnet test` e mostre todos os testes passando.
 
 ---
 
@@ -57,7 +59,7 @@ Nesta etapa, usaremos as abas do navegador abertas no **Swagger** de cada micros
 ### Passo 4.2: Cadastro da Fazenda (Management Service)
 **📍 Onde você deve estar:** Aba do Swagger do Management Service (`http://localhost:5002/swagger`).
 1. Vá até o topo da tela e clique no botão **Authorize** (Cadeado Verde).
-2. Escreva `Bearer ` (com espaço) e cole o Token que você copiou no passo anterior. Clique em **Authorize** e feche.
+2. **Cole apenas o token** (o valor que veio em `token` na resposta do login). Não digite a palavra "Bearer" — o Swagger já envia no formato correto. Clique em **Authorize** e feche.
 3. Vá no endpoint `POST /api/farms`.
 4. **Payload:**
 ```json
@@ -107,8 +109,8 @@ Nesta etapa, usaremos as abas do navegador abertas no **Swagger** de cada micros
 }
 ```
 4. Clique em **Execute**.
-5. **Ação Rápida:** Troque para a tela do Docker Desktop (ou terminal) e mostre os Logs do container `agro_alert` (Alert Service).
-6. **🗣️ O que falar:** *"Processamos uma métrica crítica. No log do Worker do Alert Service, o RabbitMQ consumiu o JSON e logo em seguida printou 'ALERTA DE SECA DETECTADO! Umidade 15%'. Isso gerou o alerta de risco no sistema de forma transparente e performática."*
+5. **Ação Rápida:** Troque para a tela do Docker Desktop (ou terminal) e mostre os Logs do container `agro_alert` (Alert Service). Ou abra o Swagger do Alert Service em `http://localhost:5004/swagger` e mostre **GET /api/alerts** e **GET /api/status/field/{fieldId}** para exibir alertas e status por talhão.
+6. **🗣️ O que falar:** *"Processamos uma métrica crítica. O Alert Service persiste as leituras e aplica a regra de 24h: se a umidade ficar abaixo de 30% por mais de 24 horas, gera o Alerta de Seca. Os alertas e o status (Normal, Alerta de Seca, Risco de Praga) podem ser consultados na API do Alert Service."*
 
 ---
 

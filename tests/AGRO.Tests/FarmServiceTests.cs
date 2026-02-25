@@ -20,6 +20,18 @@ public class FarmServiceTests
     }
 
     [Fact]
+    public async Task GetAllFarmsAsync_WhenEmpty_ReturnsEmptyList()
+    {
+        var context = GetInMemoryDbContext();
+        var service = new FarmService(context);
+
+        var result = await service.GetAllFarmsAsync();
+
+        Assert.NotNull(result);
+        Assert.Empty(result);
+    }
+
+    [Fact]
     public async Task CreateFarmAsync_ShouldReturnCreatedFarm()
     {
         // Arrange

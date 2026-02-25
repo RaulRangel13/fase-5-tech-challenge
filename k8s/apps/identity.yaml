@@ -22,12 +22,8 @@ spec:
               value: "Development"
             - name: ConnectionStrings__DefaultConnection
               value: "Host=agro-postgres;Port=5432;Database=agro_identity_db;Username=admin;Password=adminpassword"
-            - name: Jwt__Key
-              value: "segredo_super_secreto_para_o_hackathon"
-            - name: Jwt__Issuer
-              value: "AgroSolutions"
-            - name: Jwt__Audience
-              value: "AgroSolutions"
+            - name: JwtSettings__SecretKey
+              value: "super_secret_key_for_hackathon_agro_solutions_2026"
           ports:
             - containerPort: 8080
 ---

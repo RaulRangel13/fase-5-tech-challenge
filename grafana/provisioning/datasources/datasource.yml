@@ -9,3 +9,20 @@ datasources:
     basicAuth: false
     isDefault: true
     editable: true
+  - name: PostgreSQL (Telemetria/Alertas)
+    type: postgres
+    uid: agro_postgres
+    access: proxy
+    orgId: 1
+    url: postgres:5432
+    database: agro_alert_db
+    user: admin
+    basicAuth: false
+    isDefault: false
+    editable: true
+    jsonData:
+      sslmode: "disable"
+      postgresVersion: 1500
+      timescaledb: false
+    secureJsonData:
+      password: adminpassword
