@@ -3,18 +3,18 @@
   "title": "AgroSolutions - Monitoramento por Talhão",
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 4,
   "refresh": "10s",
   "tags": ["agrosolutions", "telemetria", "alertas"],
-  "time": { "from": "now-24h", "to": "now" },
+  "time": { "from": "now-7d", "to": "now" },
   "templating": {
     "list": [
       {
         "name": "fieldId",
         "type": "query",
         "label": "Talhão (FieldId)",
-        "datasource": { "type": "postgres", "uid": "agro_postgres" },
-        "refresh": 1,
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "agro_postgres" },
+        "refresh": 2,
         "query": "SELECT DISTINCT \"FieldId\"::text FROM \"SensorReadings\" ORDER BY 1",
         "includeAll": false,
         "multi": false
@@ -27,11 +27,11 @@
       "type": "stat",
       "title": "Status do talhão",
       "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 },
-      "datasource": { "type": "postgres", "uid": "agro_postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "agro_postgres" },
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT CASE\n  WHEN EXISTS (SELECT 1 FROM \"Alerts\" WHERE \"FieldId\" = '$fieldId'::uuid AND \"Message\" ILIKE '%seca%' AND \"Timestamp\" > now() - interval '48 hours') THEN 1\n  WHEN EXISTS (SELECT 1 FROM \"Alerts\" WHERE \"FieldId\" = '$fieldId'::uuid AND \"Message\" ILIKE '%praga%' AND \"Timestamp\" > now() - interval '48 hours') THEN 2\n  ELSE 0\nEND AS value",
+          "rawSql": "SELECT CASE WHEN EXISTS (SELECT 1 FROM \"Alerts\" WHERE \"FieldId\" = '${fieldId}'::uuid AND \"Message\" ILIKE '%seca%' AND \"Timestamp\" > now() - interval '48 hours') THEN 1 WHEN EXISTS (SELECT 1 FROM \"Alerts\" WHERE \"FieldId\" = '${fieldId}'::uuid AND \"Message\" ILIKE '%praga%' AND \"Timestamp\" > now() - interval '48 hours') THEN 2 ELSE 0 END AS value",
           "refId": "A"
         }
       ],
@@ -41,9 +41,9 @@
             {
               "type": "value",
               "options": {
-                "0": { "text": "Normal" },
-                "1": { "text": "Alerta de Seca" },
-                "2": { "text": "Risco de Praga" }
+                "0": { "text": "Normal", "color": "green" },
+                "1": { "text": "Alerta de Seca", "color": "orange" },
+                "2": { "text": "Risco de Praga", "color": "red" }
               }
             }
           ],
@@ -70,57 +70,87 @@
       "type": "timeseries",
       "title": "Umidade do solo (%)",
       "gridPos": { "x": 6, "y": 0, "w": 18, "h": 9 },
-      "datasource": { "type": "postgres", "uid": "agro_postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "agro_postgres" },
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT \"Timestamp\" AS time, \"SoilMoisture\" AS value FROM \"SensorReadings\" WHERE \"FieldId\" = '$fieldId'::uuid AND $__timeFilter(\"Timestamp\") ORDER BY 1",
+          "rawSql": "SELECT \"Timestamp\" AS time, \"SoilMoisture\" AS \"Umidade\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${fieldId}'::uuid AND $__timeFilter(\"Timestamp\") ORDER BY 1",
           "refId": "A"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 30 },
+              { "color": "green", "value": 50 }
+            ]
+          }
+        }
+      }
     },
     {
       "id": 3,
       "type": "timeseries",
       "title": "Temperatura (°C)",
-      "gridPos": { "x": 0, "y": 5, "w": 12, "h": 9 },
-      "datasource": { "type": "postgres", "uid": "agro_postgres" },
+      "gridPos": { "x": 0, "y": 9, "w": 12, "h": 9 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "agro_postgres" },
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT \"Timestamp\" AS time, \"Temperature\" AS value FROM \"SensorReadings\" WHERE \"FieldId\" = '$fieldId'::uuid AND $__timeFilter(\"Timestamp\") ORDER BY 1",
+          "rawSql": "SELECT \"Timestamp\" AS time, \"Temperature\" AS \"Temp\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${fieldId}'::uuid AND $__timeFilter(\"Timestamp\") ORDER BY 1",
           "refId": "A"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 35 },
+              { "color": "red", "value": 38 }
+            ]
+          }
+        }
+      }
     },
     {
       "id": 4,
       "type": "timeseries",
       "title": "Precipitação (mm)",
-      "gridPos": { "x": 12, "y": 5, "w": 12, "h": 9 },
-      "datasource": { "type": "postgres", "uid": "agro_postgres" },
+      "gridPos": { "x": 12, "y": 9, "w": 12, "h": 9 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "agro_postgres" },
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT \"Timestamp\" AS time, \"Rainfall\" AS value FROM \"SensorReadings\" WHERE \"FieldId\" = '$fieldId'::uuid AND $__timeFilter(\"Timestamp\") ORDER BY 1",
+          "rawSql": "SELECT \"Timestamp\" AS time, \"Rainfall\" AS \"Chuva\" FROM \"SensorReadings\" WHERE \"FieldId\" = '${fieldId}'::uuid AND $__timeFilter(\"Timestamp\") ORDER BY 1",
           "refId": "A"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lengthmm"
+        }
+      }
     },
     {
       "id": 5,
       "type": "table",
       "title": "Alertas (últimos 100)",
-      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 10 },
-      "datasource": { "type": "postgres", "uid": "agro_postgres" },
+      "gridPos": { "x": 0, "y": 18, "w": 24, "h": 8 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "agro_postgres" },
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT \"Timestamp\" AS \"Data/Hora (UTC)\", \"Severity\" AS \"Severidade\", \"Message\" AS \"Mensagem\", \"TriggerValue\" AS \"Valor\" FROM \"Alerts\" WHERE \"FieldId\" = '$fieldId'::uuid AND \"Timestamp\" > now() - interval '30 days' ORDER BY \"Timestamp\" DESC LIMIT 100",
+          "rawSql": "SELECT \"Timestamp\" AS \"Data/Hora\", \"Severity\" AS \"Severidade\", \"Message\" AS \"Mensagem\", \"TriggerValue\" AS \"Valor\" FROM \"Alerts\" WHERE \"FieldId\" = '${fieldId}'::uuid AND \"Timestamp\" > now() - interval '30 days' ORDER BY \"Timestamp\" DESC LIMIT 100",
           "refId": "A"
         }
       ]
     }
   ]
 }
-

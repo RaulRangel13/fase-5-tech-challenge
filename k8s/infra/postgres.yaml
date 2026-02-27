@@ -18,11 +18,20 @@ spec:
           image: postgres:15-alpine
           env:
             - name: POSTGRES_USER
-              value: "admin"
+              valueFrom:
+                secretKeyRef:
+                  name: agro-secrets
+                  key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
-              value: "adminpassword"
+              valueFrom:
+                secretKeyRef:
+                  name: agro-secrets
+                  key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
-              value: "agro_db"
+              valueFrom:
+                secretKeyRef:
+                  name: agro-secrets
+                  key: POSTGRES_DB
           ports:
             - containerPort: 5432
           volumeMounts:

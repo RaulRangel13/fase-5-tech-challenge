@@ -1,8 +1,12 @@
 apiVersion: 1
 
+# Prometheus (métricas) e PostgreSQL (telemetria/alertas para o dashboard de talhão).
+# A senha do Postgres aqui é a mesma do .env de desenvolvimento (adminpassword).
+# Se você alterou POSTGRES_PASSWORD no .env, edite no Grafana: Configuration → Data sources → PostgreSQL (Telemetria/Alertas) → altere a senha e Save & test.
 datasources:
   - name: Prometheus
     type: prometheus
+    uid: prometheus
     access: proxy
     orgId: 1
     url: http://prometheus:9090
@@ -10,7 +14,7 @@ datasources:
     isDefault: true
     editable: true
   - name: PostgreSQL (Telemetria/Alertas)
-    type: postgres
+    type: grafana-postgresql-datasource
     uid: agro_postgres
     access: proxy
     orgId: 1
@@ -21,6 +25,7 @@ datasources:
     isDefault: false
     editable: true
     jsonData:
+      database: agro_alert_db
       sslmode: "disable"
       postgresVersion: 1500
       timescaledb: false

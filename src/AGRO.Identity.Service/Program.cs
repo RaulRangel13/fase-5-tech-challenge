@@ -39,9 +39,10 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// DB Context
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-                       ?? "Host=localhost;Port=5432;Database=agro_db;Username=admin;Password=adminpassword";
+// DB Context - valores devem vir de variáveis de ambiente (ex.: .env ou User Secrets)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("Defina ConnectionStrings__DefaultConnection (ex.: via .env ou variável de ambiente). Veja .env.example e docs/SECRETS.md.");
 
 builder.Services.AddDbContext<IdentityDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -50,8 +51,10 @@ builder.Services.AddDbContext<IdentityDbContext>(options =>
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthService>();
 
-// JWT Auth
-var secretKey = builder.Configuration["JwtSettings:SecretKey"] ?? "super_secret_key_for_hackathon_agro_solutions_2026";
+// JWT Auth - chave deve vir de variáveis de ambiente
+var secretKey = builder.Configuration["JwtSettings:SecretKey"];
+if (string.IsNullOrWhiteSpace(secretKey))
+    throw new InvalidOperationException("Defina JwtSettings__SecretKey (ex.: via .env ou variável de ambiente). Veja .env.example e docs/SECRETS.md.");
 var key = Encoding.ASCII.GetBytes(secretKey);
 
 builder.Services.AddAuthentication(x =>

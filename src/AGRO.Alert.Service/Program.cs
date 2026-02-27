@@ -6,9 +6,10 @@ using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DB Context
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Host=localhost;Port=5432;Database=agro_alert_db;Username=admin;Password=adminpassword";
+// DB Context - valores devem vir de variáveis de ambiente
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("Defina ConnectionStrings__DefaultConnection (ex.: via .env ou variável de ambiente). Veja .env.example e docs/SECRETS.md.");
 
 builder.Services.AddDbContext<AlertDbContext>(options =>
     options.UseNpgsql(connectionString));

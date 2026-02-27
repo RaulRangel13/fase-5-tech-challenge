@@ -35,7 +35,8 @@ public class Worker : BackgroundService
         {
             HostName = _configuration["RabbitMQ:HostName"] ?? "localhost",
             UserName = _configuration["RabbitMQ:UserName"] ?? "guest",
-            Password = _configuration["RabbitMQ:Password"] ?? "guest"
+            Password = _configuration["RabbitMQ:Password"]
+                ?? throw new InvalidOperationException("RabbitMQ:Password não configurado. Defina via variável de ambiente (veja docs/SECRETS.md).")
         };
         
         // Retry logic for connection

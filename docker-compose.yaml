@@ -1,12 +1,15 @@
+# Variáveis sensíveis vêm do arquivo .env (não commitado). Copie .env.example para .env e preencha.
+# Veja docs/SECRETS.md
+
 services:
   # 1. Banco de Dados (PostgreSQL)
   postgres:
     image: postgres:15-alpine
     container_name: agro_postgres
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: adminpassword
-      POSTGRES_DB: agro_db
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env - copie .env.example para .env}
+      POSTGRES_DB: ${POSTGRES_DB:-agro_db}
     ports:
       - "5432:5432"
     volumes:
@@ -15,7 +18,7 @@ services:
     networks:
       - agro-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d agro_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-agro_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -25,8 +28,8 @@ services:
     image: rabbitmq:3-management-alpine
     container_name: agro_rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Defina RABBITMQ_DEFAULT_PASS no arquivo .env}
     ports:
       - "5672:5672"   # Protocolo AMQP
       - "15672:15672" # Management UI
@@ -56,12 +59,15 @@ services:
     image: grafana/grafana:latest
     container_name: agro_grafana
     depends_on:
-      - prometheus
+      postgres:
+        condition: service_healthy
+      prometheus:
+        condition: service_started
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:?Defina GF_SECURITY_ADMIN_PASSWORD no arquivo .env}
     networks:
       - agro-network
     volumes:
@@ -77,8 +83,8 @@ services:
     container_name: agro_identity
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=agro_identity_db;Username=admin;Password=adminpassword
-      - JwtSettings__SecretKey=super_secret_key_for_hackathon_agro_solutions_2026
+      - ConnectionStrings__DefaultConnection=${CONNECTION_STRING_IDENTITY:?Defina CONNECTION_STRING_IDENTITY no .env}
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY:?Defina JWT_SECRET_KEY no .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,8 +101,8 @@ services:
     container_name: agro_management
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=agro_management_db;Username=admin;Password=adminpassword
-      - JwtSettings__SecretKey=super_secret_key_for_hackathon_agro_solutions_2026
+      - ConnectionStrings__DefaultConnection=${CONNECTION_STRING_MANAGEMENT:?Defina CONNECTION_STRING_MANAGEMENT no .env}
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY:?Defina JWT_SECRET_KEY no .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -116,8 +122,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - RabbitMQ__HostName=rabbitmq
-      - RabbitMQ__UserName=guest
-      - RabbitMQ__Password=guest
+      - RabbitMQ__UserName=${RABBITMQ_DEFAULT_USER:-guest}
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS:?Defina RABBITMQ_DEFAULT_PASS no .env}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -137,10 +143,10 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=agro_alert_db;Username=admin;Password=adminpassword
+      - ConnectionStrings__DefaultConnection=${CONNECTION_STRING_ALERT:?Defina CONNECTION_STRING_ALERT no .env}
       - RabbitMQ__HostName=rabbitmq
-      - RabbitMQ__UserName=guest
-      - RabbitMQ__Password=guest
+      - RabbitMQ__UserName=${RABBITMQ_DEFAULT_USER:-guest}
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS:?Defina RABBITMQ_DEFAULT_PASS no .env}
     depends_on:
       rabbitmq:
         condition: service_healthy

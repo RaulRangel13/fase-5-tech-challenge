@@ -17,7 +17,8 @@ public class TokenService
 
     public string GenerateToken(User user)
     {
-        var secretKey = _configuration["JwtSettings:SecretKey"] ?? "super_secret_key_for_hackathon_agro_solutions_2026";
+        var secretKey = _configuration["JwtSettings:SecretKey"]
+            ?? throw new InvalidOperationException("JwtSettings:SecretKey não configurado. Defina via variável de ambiente (veja docs/SECRETS.md).");
         var key = Encoding.ASCII.GetBytes(secretKey);
 
         var tokenHandler = new JwtSecurityTokenHandler();

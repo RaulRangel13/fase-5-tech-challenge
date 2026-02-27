@@ -18,9 +18,16 @@ spec:
           image: grafana/grafana:latest
           env:
             - name: GF_SECURITY_ADMIN_USER
-              value: "admin"
+              valueFrom:
+                secretKeyRef:
+                  name: agro-secrets
+                  key: GF_SECURITY_ADMIN_USER
+                  optional: true
             - name: GF_SECURITY_ADMIN_PASSWORD
-              value: "admin"
+              valueFrom:
+                secretKeyRef:
+                  name: agro-secrets
+                  key: GF_SECURITY_ADMIN_PASSWORD
           ports:
             - containerPort: 3000
           volumeMounts:

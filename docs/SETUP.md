@@ -2,6 +2,8 @@
 
 Este guia descreve como rodar a plataforma AgroSolutions localmente. Você tem duas opções: **Docker Compose** (recomendado para testes rápidos) ou **Kubernetes / Minikube** (recomendado para o requisito oficial).
 
+**Importante – Segredos:** Nenhuma senha fica nos arquivos commitados. Na **primeira vez**, copie o exemplo para `.env` na raiz: `cp .env.example .env`. O `.env.example` já vem com os mesmos valores de desenvolvimento que o projeto usava antes — não precisa alterar nada para rodar local. O `.env` não é commitado. Detalhes em **`docs/SECRETS.md`**.
+
 ## Pré-requisitos
 Independente da forma escolhida, você deve ter instalado na sua máquina:
 1. Docker Desktop ou Engine
@@ -23,7 +25,15 @@ Se estiver usando o Minikube (certifique-se de alocar bons recursos, pois subire
 minikube start --cpus=4 --memory=8192
 ```
 
-### Passo 2: Construir as Imagens Docker (Local Registry)
+### Passo 2: Criar o Secret com as variáveis de ambiente
+Os manifestos em `k8s/` não contêm senhas; elas vêm de um Secret do Kubernetes. Crie o secret a partir do seu arquivo `.env` (veja `k8s/README-SECRETS.md`):
+
+```bash
+# Na raiz do projeto (com .env já preenchido)
+kubectl create secret generic agro-secrets --from-env-file=.env -n default
+```
+
+### Passo 3: Construir as Imagens Docker (Local Registry)
 Aponte seu terminal local para o daemon docker do Minikube para que as imagens fiquem disponíveis no cluster sem precisar publicá-las no DockerHub:
 ```bash
 # Windows (PowerShell)
@@ -40,7 +50,7 @@ docker build -t agro-ingestion:latest -f src/AGRO.Ingestion.Service/Dockerfile .
 docker build -t agro-alert:latest -f src/AGRO.Alert.Service/Dockerfile .
 ```
 
-### Passo 3: Aplicar Infraestrutura (Postgres, RabbitMQ, Prometheus, Grafana)
+### Passo 4: Aplicar Infraestrutura (Postgres, RabbitMQ, Prometheus, Grafana)
 ```bash
 cd k8s/infra
 kubectl apply -f postgres.yaml
@@ -59,7 +69,7 @@ kubectl apply -f grafana.yaml
 
 Os DataSources e Dashboards do Grafana já vão ser provisionados via ConfigMap.
 
-### Passo 4: Aplicar os Microsserviços
+### Passo 5: Aplicar os Microsserviços
 ```bash
 cd ../apps
 kubectl apply -f identity.yaml
@@ -73,7 +83,7 @@ Aguarde os pods ficarem com status `Running`:
 kubectl get pods -w
 ```
 
-### Passo 5: Acesso aos Serviços (NodePort)
+### Passo 6: Acesso aos Serviços (NodePort)
 Dependendo do Minikube, você precisará executar:
 ```bash
 minikube service agro-identity --url
@@ -82,11 +92,13 @@ minikube service agro-ingestion --url
 minikube service agro-alert --url
 minikube service grafana --url
 ```
-Geralmente, o Grafana ficará disponível na porta mapeada e você poderá visualizá-lo com login `admin` / `admin`.
+Grafana: use o usuário e senha definidos no seu `.env` (`GF_SECURITY_ADMIN_USER` / `GF_SECURITY_ADMIN_PASSWORD`). O datasource PostgreSQL pode precisar de configuração manual da senha na primeira vez (veja `docs/SECRETS.md`).
 
 ---
 
 ## Opção 2: Rodando via Docker Compose
+
+**Antes:** copie `.env.example` para `.env` na raiz e preencha (veja `docs/SECRETS.md`). Sem o `.env`, o Compose vai pedir as variáveis obrigatórias.
 
 Se o intuito for subir rápido:
 ```bash
@@ -97,8 +109,8 @@ Isso vai criar toda a infraestrutura com as rotas fixas:
 - Management API: `http://localhost:5002/swagger`
 - Ingestion API: `http://localhost:5003/swagger`
 - Alert API: `http://localhost:5004/swagger`
-- RabbitMQ UI: `http://localhost:15672` (guest / guest)
-- Grafana: `http://localhost:3000` (admin / admin)
+- RabbitMQ UI: `http://localhost:15672` (usuário/senha do seu `.env`: `RABBITMQ_DEFAULT_USER` / `RABBITMQ_DEFAULT_PASS`)
+- Grafana: `http://localhost:3000` (usuário/senha do seu `.env`: `GF_SECURITY_ADMIN_*`)
 - Prometheus: `http://localhost:9090`
 
 **Primeira vez ou após `docker-compose down -v`:** o script em `init-db/01-create-databases.sql` cria os bancos `agro_identity_db`, `agro_management_db` e `agro_alert_db` na inicialização do PostgreSQL.

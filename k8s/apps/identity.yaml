@@ -21,9 +21,15 @@ spec:
             - name: ASPNETCORE_ENVIRONMENT
               value: "Development"
             - name: ConnectionStrings__DefaultConnection
-              value: "Host=agro-postgres;Port=5432;Database=agro_identity_db;Username=admin;Password=adminpassword"
+              valueFrom:
+                secretKeyRef:
+                  name: agro-secrets
+                  key: CONNECTION_STRING_IDENTITY
             - name: JwtSettings__SecretKey
-              value: "super_secret_key_for_hackathon_agro_solutions_2026"
+              valueFrom:
+                secretKeyRef:
+                  name: agro-secrets
+                  key: JWT_SECRET_KEY
           ports:
             - containerPort: 8080
 ---

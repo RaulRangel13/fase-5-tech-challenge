@@ -23,9 +23,16 @@ spec:
             - name: RabbitMQ__HostName
               value: "rabbitmq"
             - name: RabbitMQ__UserName
-              value: "guest"
+              valueFrom:
+                secretKeyRef:
+                  name: agro-secrets
+                  key: RABBITMQ_DEFAULT_USER
+                  optional: true
             - name: RabbitMQ__Password
-              value: "guest"
+              valueFrom:
+                secretKeyRef:
+                  name: agro-secrets
+                  key: RABBITMQ_DEFAULT_PASS
           ports:
             - containerPort: 8080
 ---
