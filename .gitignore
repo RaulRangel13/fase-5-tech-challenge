@@ -45,3 +45,5 @@ Thumbs.db
 /.vs/hackton/v17
 /.vs/ProjectEvaluation
 /.vs/VSWorkspaceState.json
+/docs/PROMETHEUS_VIDEO.md
+/docs/ALERT_API_AND_RULES.md
